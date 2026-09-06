@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
-NUM_BOIDS :: 200
+NUM_BOIDS :: 400
 BOID_SIZE :: 8.0
 
 // Window dimensions
@@ -32,14 +32,20 @@ main :: proc() {
     rl.InitWindow(WIDTH, HEIGHT, "Boids Simulation")
     rl.SetTargetFPS(60)
     
-    flock := init_boids()
-    
+    flock_a := init_boids()
+    flock_b := init_boids()
+
+    boid_texture_a := rl.LoadTexture("assets/plane.png")
+    boid_texture_b := rl.LoadTexture("assets/plane2.png")
+
     // Main loop
     for !rl.WindowShouldClose() {
-        update_boids(flock)
+        update_boids(flock_a)
+        update_boids(flock_b)
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
-        draw_boids(flock)
+        draw_boids(flock_a, boid_texture_a)
+        draw_boids(flock_b, boid_texture_b)
         rl.EndDrawing()
     }
     
@@ -155,7 +161,7 @@ cohesion :: proc(boids: []Boid, boid: Boid) -> rl.Vector2 {
     return center 
 }
 
-draw_boids :: proc(boids: []Boid) {
+draw_boids :: proc(boids: []Boid, texture: rl.Texture2D) {
     size: f32 = BOID_SIZE
 
     for boid, idx in boids {
@@ -180,7 +186,9 @@ draw_boids :: proc(boids: []Boid) {
             boid.position.y + math.sin(math.atan2(vel_normalized.y, vel_normalized.x) - 2.5) * size
         }
 
-        rl.DrawTriangleLines(front, left, right, rl.LIGHTGRAY)
+        rl.DrawTexturePro(texture, rl.Rectangle{0, 0, f32(texture.width), f32(texture.height)}, rl.Rectangle{boid.position.x - size, boid.position.y - size, size * 2, size * 2}, rl.Vector2{size, size}, angle * (180 / math.PI), rl.WHITE)
+
+        // rl.DrawTriangleLines(front, left, right, rl.LIGHTGRAY)
     }
 }
 

@@ -13,11 +13,11 @@ main :: proc() {
 
     // Init the wave collapse function
     wave_state: wfc.WaveState
-    output_width := 64
-    output_height := 64
+    output_width := 32
+    output_height := 32
     pattern_dim := 3
     max_depth := 64
-    wfc.init(&wave_state, "assets/wfctest.png", output_width, output_height, pattern_dim, max_depth)
+    wfc.init(&wave_state, "assets/wfctest2.png", output_width, output_height, pattern_dim, max_depth)
 
     status := 0
     tries := 1
