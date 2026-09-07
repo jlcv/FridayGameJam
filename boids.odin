@@ -4,12 +4,12 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
-NUM_BOIDS :: 400
-BOID_SIZE :: 8.0
+NUM_BOIDS :: 300
+BOID_SIZE :: 10.0
 
 // Window dimensions
-WIDTH :: 2040
-HEIGHT :: 1080
+WIDTH :: 2560
+HEIGHT :: 1600
 
 // Boid parameters
 MAX_SPEED :: 6.5
@@ -33,41 +33,71 @@ main :: proc() {
     rl.SetTargetFPS(60)
     
     flock_a := init_boids()
+    flock_a_downed : [dynamic]Boid
     flock_b := init_boids()
 
+    background_texture := rl.LoadTexture("assets/stars2.png")
     boid_texture_a := rl.LoadTexture("assets/plane.png")
     boid_texture_b := rl.LoadTexture("assets/plane2.png")
+    explosion_texture := rl.LoadTexture("assets/explosion.png")
+    planet_texture := rl.LoadTexture("assets/planet.png")
 
     // Main loop
     for !rl.WindowShouldClose() {
+        fps := rl.GetFPS()
+        lifebar_a := get_lifebar(flock_a)
+        lifebar_b := get_lifebar(flock_b)
         update_boids(flock_a)
         update_boids(flock_b)
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
-        draw_boids(flock_a, boid_texture_a)
-        draw_boids(flock_b, boid_texture_b)
+        rl.DrawTexturePro(background_texture, rl.Rectangle{0, 0, f32(background_texture.width), f32(background_texture.height)}, rl.Rectangle{0, 0, WIDTH, HEIGHT}, rl.Vector2{0, 0}, 0.0, rl.WHITE)
+        rl.DrawText(fmt.ctprint("fps:", fps), 10, 10, 20, rl.MAGENTA)
+        rl.DrawText(lifebar_a, 10, 80, 30, rl.BLUE);
+        rl.DrawText(lifebar_b, 10, 120, 30, rl.RED);
+        rl.DrawText("BLUE_049 DOWN", 10, 1300, 30, rl.BLUE);
+        rl.DrawText("BLUE_297 DOWN", 10, 1330, 30, rl.BLUE);
+        rl.DrawText("RED_124 DOWN", 10, 1360, 30, rl.RED);
+        rl.DrawText("RED_263 DOWN", 10, 1390, 30, rl.RED);
+        rl.DrawText("BLUE_108 DOWN", 10, 1420, 30, rl.BLUE);
+        draw_boids(flock_a, boid_texture_a, explosion_texture, rl.GREEN)
+        rl.DrawTexture(planet_texture, 1200, 700, rl.WHITE)
+        draw_boids(flock_b, boid_texture_b, explosion_texture, rl.YELLOW)
+
         rl.EndDrawing()
+
+        if (len(flock_a) > 0) {
+            unordered_remove(&flock_a, 0)
+        }
     }
     
     rl.CloseWindow()
 }
 
-init_boids :: proc() -> []Boid {
-    boids := new([NUM_BOIDS]Boid)
+init_boids :: proc() -> [dynamic]Boid {
+    boids : [dynamic]Boid
     
     // Initialize boids with random positions and velocities
     for i in 0..<NUM_BOIDS {
-        boids[i] = Boid{
-            position = rl.Vector2{f32(rl.GetRandomValue(0, WIDTH)), f32(rl.GetRandomValue(0, HEIGHT))},
-            velocity = rl.Vector2{f32(rl.GetRandomValue(-1, 1)), f32(rl.GetRandomValue(-1, 1))},
-            acceleration = rl.Vector2{0, 0},
-        }
+        append(
+            &boids,
+            Boid {
+                position = rl.Vector2{f32(rl.GetRandomValue(0, WIDTH)), f32(rl.GetRandomValue(0, HEIGHT))},
+                velocity = rl.Vector2{f32(rl.GetRandomValue(-1, 1)), f32(rl.GetRandomValue(-1, 1))},
+                acceleration = rl.Vector2{0, 0},
+            }
+        )
     }
     
-    return boids[:]
+    return boids
 }
 
-separation :: proc(boids: []Boid, boid: Boid) -> rl.Vector2 {
+get_lifebar :: proc(boids: [dynamic]Boid) -> cstring {
+    lifebar := rl.TextFormat("Score: %d", len(boids))
+    return lifebar
+}
+
+separation :: proc(boids: [dynamic]Boid, boid: Boid) -> rl.Vector2 {
     perception_radius: f32 = SEPARATION_RADIUS
 
     steer := rl.Vector2{0, 0}
@@ -100,7 +130,7 @@ separation :: proc(boids: []Boid, boid: Boid) -> rl.Vector2 {
     return steer
 }
 
-alignment :: proc(boids: []Boid, boid: Boid) -> rl.Vector2 {
+alignment :: proc(boids: [dynamic]Boid, boid: Boid) -> rl.Vector2 {
     perception_radius: f32 = ALIGNMENT_RADIUS
     avg_velocity := rl.Vector2{0, 0}
 
@@ -126,7 +156,7 @@ alignment :: proc(boids: []Boid, boid: Boid) -> rl.Vector2 {
     return avg_velocity
 }
 
-cohesion :: proc(boids: []Boid, boid: Boid) -> rl.Vector2 {
+cohesion :: proc(boids: [dynamic]Boid, boid: Boid) -> rl.Vector2 {
     perception_radius: f32 = COHESION_RADIUS
     
     // Center of the boids in the perception radius
@@ -161,7 +191,7 @@ cohesion :: proc(boids: []Boid, boid: Boid) -> rl.Vector2 {
     return center 
 }
 
-draw_boids :: proc(boids: []Boid, texture: rl.Texture2D) {
+draw_boids :: proc(boids: [dynamic]Boid, texture: rl.Texture2D, explosion_texture: rl.Texture2D, laser_color: rl.Color) {
     size: f32 = BOID_SIZE
 
     for boid, idx in boids {
@@ -176,6 +206,11 @@ draw_boids :: proc(boids: []Boid, texture: rl.Texture2D) {
             boid.position.y + vel_normalized.y * size * 2
         }
 
+        laser_front := rl.Vector2{
+            boid.position.x + vel_normalized.x * size * 2000, 
+            boid.position.y + vel_normalized.y * size * 2000
+        }
+
         left := rl.Vector2{
             boid.position.x + math.cos(math.atan2(vel_normalized.y, vel_normalized.x) + 2.5) * size, 
             boid.position.y + math.sin(math.atan2(vel_normalized.y, vel_normalized.x) + 2.5) * size
@@ -187,13 +222,21 @@ draw_boids :: proc(boids: []Boid, texture: rl.Texture2D) {
         }
 
         rl.DrawTexturePro(texture, rl.Rectangle{0, 0, f32(texture.width), f32(texture.height)}, rl.Rectangle{boid.position.x - size, boid.position.y - size, size * 2, size * 2}, rl.Vector2{size, size}, angle * (180 / math.PI), rl.WHITE)
+        
+        if (rl.GetRandomValue(0, 999) == 1) {
+            rl.DrawLineEx(front, laser_front, 1.0, laser_color)
+        }
+
+        if (rl.GetRandomValue(0, 199) == 2) {
+            rl.DrawTexturePro(explosion_texture, rl.Rectangle{0, 0, f32(explosion_texture.width), f32(explosion_texture.height)}, rl.Rectangle{boid.position.x - size, boid.position.y - size, size * 2, size * 2}, rl.Vector2{size, size}, angle * (180 / math.PI), rl.WHITE)
+        }
 
         // rl.DrawTriangleLines(front, left, right, rl.LIGHTGRAY)
     }
 }
 
-update_boids :: proc(boids: []Boid) {
-    for i in 0..<NUM_BOIDS {
+update_boids :: proc(boids: [dynamic]Boid) {
+    for i in 0..<len(boids) {
         boid := &boids[i]
         
         // Calculate the steering forces
