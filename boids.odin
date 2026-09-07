@@ -5,11 +5,11 @@ import "core:math"
 import rl "vendor:raylib"
 
 NUM_BOIDS :: 300
-BOID_SIZE :: 10.0
+BOID_SIZE :: 4.0
 
 // Window dimensions
-WIDTH :: 2560
-HEIGHT :: 1600
+WIDTH :: 1080
+HEIGHT :: 800
 
 // Boid parameters
 MAX_SPEED :: 6.5
@@ -61,8 +61,32 @@ main :: proc() {
         rl.DrawText("RED_263 DOWN", 10, 1390, 30, rl.RED);
         rl.DrawText("BLUE_108 DOWN", 10, 1420, 30, rl.BLUE);
         draw_boids(flock_a, boid_texture_a, explosion_texture, rl.GREEN)
-        rl.DrawTexture(planet_texture, 1200, 700, rl.WHITE)
+        planet_rect := rl.Rectangle{WIDTH / 2, HEIGHT / 2, 200, 200}
+        rl.DrawTexturePro(planet_texture, rl.Rectangle{0, 0, f32(planet_texture.width), f32(planet_texture.height)}, planet_rect, rl.Vector2{0, 0}, 0.0, rl.WHITE)
         draw_boids(flock_b, boid_texture_b, explosion_texture, rl.YELLOW)
+        // Define button bounds
+        btn_bounds := rl.Rectangle{350, 200, 100, 40}
+
+        // Raygui functions are inside the same 'rl' package prefix
+        if rl.GuiButton(btn_bounds, "Click Me") {
+            flock_a = init_boids()
+        }
+
+
+
+
+    
+        mouse_pos := rl.GetMousePosition()
+
+        is_hovered := rl.CheckCollisionPointRec(mouse_pos, planet_rect)
+
+        if is_hovered {
+            rl.DrawText("THIS APPEARS ON HOVER!", WIDTH / 2, HEIGHT / 2, 30, rl.LIME);
+        }
+
+
+
+
 
         rl.EndDrawing()
 
@@ -72,6 +96,10 @@ main :: proc() {
     }
     
     rl.CloseWindow()
+}
+
+draw_planet_view :: proc() {
+    
 }
 
 init_boids :: proc() -> [dynamic]Boid {
@@ -93,7 +121,7 @@ init_boids :: proc() -> [dynamic]Boid {
 }
 
 get_lifebar :: proc(boids: [dynamic]Boid) -> cstring {
-    lifebar := rl.TextFormat("Score: %d", len(boids))
+    lifebar := rl.TextFormat("Resources: %d", len(boids))
     return lifebar
 }
 
