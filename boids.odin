@@ -3,6 +3,7 @@ package main
 import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
+import "managers"
 
 NUM_BOIDS :: 300
 BOID_SIZE :: 4.0
@@ -35,12 +36,8 @@ main :: proc() {
     flock_a := init_boids()
     flock_a_downed : [dynamic]Boid
     flock_b := init_boids()
-
-    background_texture := rl.LoadTexture("assets/stars2.png")
-    boid_texture_a := rl.LoadTexture("assets/plane.png")
-    boid_texture_b := rl.LoadTexture("assets/plane2.png")
-    explosion_texture := rl.LoadTexture("assets/explosion.png")
-    planet_texture := rl.LoadTexture("assets/planet.png")
+    textures := managers.load_textures()
+    game := managers.load_game()
 
     // Main loop
     for !rl.WindowShouldClose() {
@@ -51,7 +48,7 @@ main :: proc() {
         update_boids(flock_b)
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
-        rl.DrawTexturePro(background_texture, rl.Rectangle{0, 0, f32(background_texture.width), f32(background_texture.height)}, rl.Rectangle{0, 0, WIDTH, HEIGHT}, rl.Vector2{0, 0}, 0.0, rl.WHITE)
+        rl.DrawTexturePro(textures.background_texture, rl.Rectangle{0, 0, f32(textures.background_texture.width), f32(textures.background_texture.height)}, rl.Rectangle{0, 0, WIDTH, HEIGHT}, rl.Vector2{0, 0}, 0.0, rl.WHITE)
         rl.DrawText(fmt.ctprint("fps:", fps), 10, 10, 20, rl.MAGENTA)
         rl.DrawText(lifebar_a, 10, 80, 30, rl.BLUE);
         rl.DrawText(lifebar_b, 10, 120, 30, rl.RED);
@@ -60,10 +57,10 @@ main :: proc() {
         rl.DrawText("RED_124 DOWN", 10, 1360, 30, rl.RED);
         rl.DrawText("RED_263 DOWN", 10, 1390, 30, rl.RED);
         rl.DrawText("BLUE_108 DOWN", 10, 1420, 30, rl.BLUE);
-        draw_boids(flock_a, boid_texture_a, explosion_texture, rl.GREEN)
+        draw_boids(flock_a, textures.boid_texture_a, textures.explosion_texture, rl.GREEN)
         planet_rect := rl.Rectangle{WIDTH / 2, HEIGHT / 2, 200, 200}
-        rl.DrawTexturePro(planet_texture, rl.Rectangle{0, 0, f32(planet_texture.width), f32(planet_texture.height)}, planet_rect, rl.Vector2{0, 0}, 0.0, rl.WHITE)
-        draw_boids(flock_b, boid_texture_b, explosion_texture, rl.YELLOW)
+        rl.DrawTexturePro(textures.planet_texture, rl.Rectangle{0, 0, f32(textures.planet_texture.width), f32(textures.planet_texture.height)}, planet_rect, rl.Vector2{0, 0}, 0.0, rl.WHITE)
+        draw_boids(flock_b, textures.boid_texture_b, textures.explosion_texture, rl.YELLOW)
         // Define button bounds
         btn_bounds := rl.Rectangle{350, 200, 100, 40}
 
