@@ -1,0 +1,114 @@
+package main
+
+import "core:fmt"
+import rl "vendor:raylib"
+
+Button_State :: enum {
+	NORMAL   = 0,
+	HOVERED  = 1,
+	PRESSED  = 2,
+}
+
+Texture_Button :: struct {
+	bounds:      rl.Rectangle,
+	texture:     rl.Texture2D,
+	state:       Button_State,
+	is_clicked:  bool,
+}
+
+make_texture_button :: proc(texture: rl.Texture2D, position: rl.Vector2) -> Texture_Button {
+	// The atlas contains 3 vertical frames, so the source frame height is 1/3 of total height
+	frame_height := f32(texture.height) / 3.0
+
+	return Texture_Button{
+		bounds = {
+			x = position.x,
+			y = position.y,
+			width = f32(texture.width),
+			height = frame_height,
+		},
+		texture = texture,
+		state = .NORMAL,
+		is_clicked = false,
+	}
+}
+
+// 4. Component Update Logic (Handles interaction states)
+update_button :: proc(btn: ^Texture_Button) {
+	mouse_pos := rl.GetMousePosition()
+	btn.is_clicked = false
+
+	// Check if the mouse cursor collides with the button's boundaries
+	if rl.CheckCollisionPointRec(mouse_pos, btn.bounds) {
+		if rl.IsMouseButtonDown(.LEFT) {
+			btn.state = .PRESSED
+		} else {
+			// Trigger a click only when the button is released *inside* its frame boundaries
+			if btn.state == .PRESSED && rl.IsMouseButtonReleased(.LEFT) {
+				btn.is_clicked = true
+			}
+			btn.state = .HOVERED
+		}
+	} else {
+		btn.state = .NORMAL
+	}
+}
+
+// 5. Component Render Logic
+draw_button :: proc(btn: Texture_Button) {
+	// Calculate the correct source clipping rectangle based on current state
+	source_rec := rl.Rectangle{
+		x      = 0,
+		y      = f32(btn.state) * btn.bounds.height,
+		width  = btn.bounds.width,
+		height = btn.bounds.height,
+	}
+
+	// Draw the specific source slice onto the screen destination coordinates
+	dest_pos := rl.Vector2{ btn.bounds.x, btn.bounds.y }
+	rl.DrawTextureRec(btn.texture, source_rec, dest_pos, rl.WHITE)
+}
+
+// Application entry point
+main :: proc() {
+	rl.InitWindow(800, 600, "Odin + Raylib - Custom Texture Button")
+	defer rl.CloseWindow()
+
+	rl.SetTargetFPS(60)
+
+	// Load the 3-state texture atlas into GPU memory (VRAM)
+	// Make sure you place your asset inside the root folder or update the file path
+	btn_texture := rl.LoadTexture("button_atlas.png")
+	defer rl.UnloadTexture(btn_texture)
+
+	// Instantiate our component at center coordinates
+	button := make_texture_button(btn_texture, { 320, 260 })
+
+	counter := 0
+
+	// Main loop
+	for !rl.WindowShouldClose() {
+		// Update
+		update_button(&button)
+		
+		if button.is_clicked {
+			counter += 1 // Increment a counter when our custom button triggers
+		}
+
+		// Draw
+		rl.BeginDrawing()
+		rl.ClearBackground(rl.RAYWHITE)
+
+		// Render our custom button component
+		draw_button(button)
+
+		// Print interaction metrics on screen
+		status_text := fmt.ctprintf("Button clicks registered: %d", counter)
+		rl.DrawText(status_text, 20, 20, 20, rl.DARKGRAY)
+		
+		state_text := fmt.ctprintf("Current State: %v", button.state)
+		rl.DrawText(state_text, 20, 50, 20, rl.MAROON)
+
+		rl.EndDrawing()
+	}
+}
